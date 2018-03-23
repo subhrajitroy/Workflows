@@ -10,7 +10,8 @@ namespace Workflow
             var workflow = new WorkflowBuilder()
             .StartWith(new HelloActivity("Roy"))
             .Then(new HelloActivity("Mary"))
-            .Then(new HelloActivity("John"))
+                .When(() => new Random().Next(1,10) % 2 == 0)
+            .Then(new HelloActivity("Even John"))
             .Build();
             workflow.StartAsync().Wait();
         }

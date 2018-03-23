@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 
 namespace Workflow{
@@ -6,6 +7,8 @@ public interface ITaskActivity{
     void SetNext(ITaskActivity next);
 
     Task ExcuteAsync();
+
+    Func<bool> ExecutionCondition {get;set;}
 }
 
 
@@ -23,11 +26,13 @@ public abstract class TaskActivity : ITaskActivity {
     }
 
     public async Task ExcuteAsync(){
-        await RunAsync();
+        if(ExecutionCondition()) await RunAsync();
         if(Next != null){
             await Next.ExcuteAsync();
         }
     }
+
+    public Func<bool> ExecutionCondition{get;set;} = () => true;
 
     protected abstract Task RunAsync();
 }
@@ -35,14 +40,22 @@ public abstract class TaskActivity : ITaskActivity {
 public class WorkflowBuilder{
     
     ITaskActivity root ;
+    ITaskActivity current ;
 
     public WorkflowBuilder StartWith(ITaskActivity activity){
         root = activity;
+        current = root;
         return this;
     }
 
     public WorkflowBuilder Then(ITaskActivity activity){
-        root.SetNext(activity);
+        current.SetNext(activity);
+        current = activity;
+        return this;
+    }
+
+    public WorkflowBuilder When(Func<bool> when){
+        current.ExecutionCondition = when;
         return this;
     }
 
@@ -52,6 +65,10 @@ public class WorkflowBuilder{
   
 }
 
+public class LastResult{
+    public object Data{get;set;}
+}
+
  public class Workflow{
      public ITaskActivity Root {get;set;}
 
@@ -59,5 +76,7 @@ public class WorkflowBuilder{
         await Root.ExcuteAsync();
      }
  }
+
+ 
 
 }
